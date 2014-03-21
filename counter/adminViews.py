@@ -14,19 +14,30 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from serversdk.admin.access.annotations import requireAdmin
-from serversdk.core.handlers import BaseHandler
-from serversdk.core.ndbextra import getAllResults
-from serversdk.core.utils import jsonEncode
-from serversdk.counter.models import Counter
-from serversdk.main import getConfig
+import json
+import os
+
+import jinja2
+import webapp2
+
+from counter.models import Counter
+
+
+class BaseHandler(webapp2.RequestHandler):
+    
+    jinja = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(os.path.dirname(__file__), 'templates')),
+                               extensions=['jinja2.ext.autoescape'],
+                               autoescape=True)
+    
+    def writeTemplate(self, fileName, context):
+        """ Shortcut to render a template as a str into the request response. """
+        template = self.jinja.get_template(fileName)
+        self.response.write(template.render(context))
+        self.response.content_type = 'text/html'
 
 
 class CountersQueryHandler(BaseHandler):
-    """
-    Helps to debug Counters by exploring them.
-    """
-    @requireAdmin
+    
     def get(self):
         """
         Query and Show counters row data.
@@ -42,12 +53,11 @@ class CountersQueryHandler(BaseHandler):
         names.sort()
         data = [{'name': name, 'value': counters[name].value, 'byDay': counters[name].bySlice} for name in names]
         
-        self.writeTemplate('counters.html', {'prefix': prefix, 'counters': data, 'appId': getConfig().megapop.appId})
+        self.writeTemplate('counters.html', {'prefix': prefix, 'counters': data})
 
 
 class CountersChartHandler(BaseHandler):
     
-    @requireAdmin
     def get(self):
         """
         Chart about specified counters
@@ -91,8 +101,8 @@ class CountersChartHandler(BaseHandler):
         
         title = self.request.get('title') or prefix or 'Counters Chart'
         
-        counters = [Counter.getCurrent(name) for name in names]
-        counters = getAllResults(counters)
+        counterFuts = [Counter.getCurrent(name) for name in names]
+        counters = [fut.get_result() for fut in counterFuts]
         
         slices = set()
         for counter in counters:
@@ -106,4 +116,4 @@ class CountersChartHandler(BaseHandler):
                 row.append(counter.bySlice.get(item, 0))
             chartData.append(row)
             
-        self.writeTemplate("countersChart.html", {"chartData": jsonEncode(chartData), "title": title})
+        self.writeTemplate("countersChart.html", {"chartData": json.dumps(chartData), "title": title})
