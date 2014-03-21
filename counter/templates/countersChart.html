@@ -1,0 +1,42 @@
+<html>
+<head>
+    <title>{{title}}</title>
+    <style type="text/css">
+        body {
+            font-family: monospace;
+        }
+
+        td, th {
+            text-align: left;
+        }
+
+        table {
+            border-spacing: 20px 2px;
+        }
+    </style>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+   google.load('visualization', '1', {packages: ['corechart']});
+ </script>
+</head>
+<body>
+    <div id="chart"></div>
+    <script type="text/javascript">
+        function drawChart() {
+            // Create and populate the data table.
+            var data = google.visualization.arrayToDataTable({{chartData|safe}});
+            // Set chart options
+            var options = {
+                'title': '{{title}}',
+                'width': '80%',
+                'height': 400,
+                'legend': {'position':'top'}
+                //'vAxis': {'logScale': true}
+            };
+            // Create and draw the visualization.
+            new google.visualization.LineChart(document.getElementById('chart')).draw(data, options);
+        }
+        google.setOnLoadCallback(drawChart);
+   </script>
+</body>
+</html>

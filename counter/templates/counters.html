@@ -1,0 +1,53 @@
+<html>
+<head><title>{{appId}} Counters</title>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+</head>
+<body>
+<style>
+td, th {
+	text-align:center;
+	padding:5px;
+}
+.left {
+	text-align:left;
+}
+tr:nth-child(odd) { background-color:#DDB; }
+tr:nth-child(even) { background-color:#DDD; }
+</style>
+<h1>Counters starting with {{prefix}}</h1>
+
+<table cellspacing="0">
+	<tr><th>Name</th><th>Total value</th><th>By Day</th></tr>
+	{% for counter in counters %}
+	<tr>
+		<td class="left"><input type="checkbox" class="counterCB" value="{{counter.name}}">{{counter.name}}</td>
+		<td>{{counter.value}}</td>
+		<td>{{counter.byDay}}</td>
+	</tr>
+	{% endfor %}
+</table>
+{% if counters %}
+<input type="button" value="Draw" id="drawBtn" />
+<script type="text/javascript">
+	$("#drawBtn").click(function(){
+		var names = null;
+		$(".counterCB:checked").each(function(i, item){
+			var name = $(item).attr('value');
+			if(names){
+				names += ','+name;
+			}else{
+				names = name;
+			}
+		});
+		if(names){
+			var url = '/admin/counters/chart/?names=' + names;
+			window.open(url, '_blank');
+		}
+	});
+</script>
+{% endif %}
+<p>
+View parameters: "prefix", "batchSize"
+</p>
+</body>
+</html>
