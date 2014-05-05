@@ -43,7 +43,7 @@ class Counter(ndb.Model):
       You will want to avoid having a single key consuming too much of it.
       500 increments per second is already 10% of this limit.
       See https://developers.google.com/appengine/docs/adminconsole/memcache
-    - It is not designed to be called multiple times during the same request (not efficient and issues with NDB auto-batching).
+    - It is not designed to be called multiple times during the same request (not efficient and issues with NDB auto-batching https://code.google.com/p/googleappengine/issues/detail?id=10617).
       If you need to increment several times the same counter, aggregate this yourself first, then use Counter.increment().
     """
     # Counter is always updated inside a transaction, we do not need memcache for the entity itself
