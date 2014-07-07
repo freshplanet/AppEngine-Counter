@@ -410,7 +410,8 @@ def _addTask(queues, func, *args, **kwargs):
     At FreshPlanet we use our 'tasks' module instead,
     which allows to have deferred task being a non-blocking call.
     
-    (we should open source it soon)
+    @see: https://github.com/freshplanet/AppEngine-Deferred
+    => Replace calls to this function by 'tasks.addTask'
     """
     try:
         # Spread tasks into several queues as each queue as a limited processing rate.

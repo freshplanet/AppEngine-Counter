@@ -20,3 +20,8 @@ On top of the basic ability to increment/decrement counters:
 ### Further documentation and examples ###
 
 See the [Counter class](https://github.com/freshplanet/AppEngine-Counter/blob/master/counter/models.py) documentation and the [views](https://github.com/freshplanet/AppEngine-Counter/blob/master/counter/views.py) module.
+
+### Dependencies ###
+
+The commited implementation only makes use of libraries available by default on Google App Engine.
+However we recommend making use of our [improved deferred library](https://github.com/freshplanet/AppEngine-Deferred) to improve performances (replace models._addTask by tasks.addTask).
