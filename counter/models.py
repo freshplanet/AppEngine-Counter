@@ -255,12 +255,12 @@ class Counter(ndb.Model):
             except (apiproxy_errors.DeadlineExceededError, datastore_errors.Timeout, datastore_errors.TransactionFailedError) as e:
                 # In case of Timeout the Counter is likely being updated and under heavy access
                 # so do nothing as another request will schedule the write if it's not already scheduled.
-                logging.warn("Could not persist %s in datastore. memcache updated. (%r)", internalName, e)
+                logging.warn("Could not persist counter %s in datastore. memcache updated. (%r)", internalName, e)
             except datastore_errors.BadRequestError as e:
                 # In case of BadRequestError, this may be because we execute too many things in //,
                 # and some transactions are taking too long (the tasklet taking more time to be completed as other operations are on-going).
                 if 'transaction has expired' in e.message:
-                    logging.warn("Could not persist %s in datastore. memcache updated.", internalName, exc_info=1)
+                    logging.warn("Could not persist counter %s in datastore. memcache updated.", internalName, exc_info=1)
                 else:
                     raise
             else:
@@ -287,7 +287,7 @@ class Counter(ndb.Model):
                     if not enqueued:
                         yield ctx.memcache_delete(cacheKey + '_scheduled')
                 else:
-                    logging.debug("%s already scheduled", internalName)
+                    logging.debug("Already scheduled: %s", internalName)
                 
             # Otherwise, nothing to do
         
@@ -358,9 +358,9 @@ class Counter(ndb.Model):
                     # Re-raise so that the task is tried again
                     raise
             else:
-                logging.warn("Could not decrement %s", cacheKey)
+                logging.warn("Could not decrement key %s", cacheKey)
         elif delta is None:
-            logging.warn("%s not resolved in memcache", cacheKey)
+            logging.warn("Key not resolved in memcache: %s", cacheKey)
         return None
     
     @classmethod
