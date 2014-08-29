@@ -25,3 +25,14 @@ See the [Counter class](https://github.com/freshplanet/AppEngine-Counter/blob/ma
 
 The commited implementation only makes use of libraries available by default on Google App Engine.
 However we recommend making use of our [improved deferred library](https://github.com/freshplanet/AppEngine-Deferred) to improve performances (replace models._addTask by tasks.addTask).
+
+--
+
+**GAME DEVELOPMENT in NYC at FreshPlanet/SongPop**
+
+Join us at our new offices across from the Empire State Building on 34th and 5th Avenue.
+FreshPlanet is a NYC based mobile game development firm and we are looking for senior Python engineers to join our back-end team.
+
+Work on back-end services that support mobile games entertaining millions of players around the world.
+
+Please contact Tom Cassidy (tcassidy@freshplanet.com) or apply at http://freshplanet.com/jobs/
