@@ -86,7 +86,7 @@ class Counter(ndb.Model):
     # Not indexed because that's too expensive to index a value that is frequently updated.
     # Most of the time we need to query counters by their names and not by their values.
     # If you want to index some counters values, you may consider subclassing Counter
-    # and override the '_updateFromMemcache' method,
+    # and override the '_postUpdateHook' method,
     # allowing you to regularly index the new value wherever suits you.
     value = ndb.IntegerProperty(indexed=False, default=0)
     
@@ -251,7 +251,7 @@ class Counter(ndb.Model):
         # If memcache was empty, update the underlying entity (unless we are sharding or don't want that feature)
         if cls.AVOID_MEMCACHE_AT_LOW_RATES and newValue == delta and nbShards <= 1:
             try:
-                yield ndb.transaction_async(lambda: cls._updateEntity(internalName, delta, sliceId, deadline))
+                counter = yield ndb.transaction_async(lambda: cls._updateEntity(internalName, delta, sliceId, deadline))
             except (apiproxy_errors.DeadlineExceededError, datastore_errors.Timeout, datastore_errors.TransactionFailedError) as e:
                 # In case of Timeout the Counter is likely being updated and under heavy access
                 # so do nothing as another request will schedule the write if it's not already scheduled.
@@ -266,6 +266,7 @@ class Counter(ndb.Model):
             else:
                 # Subtract the value previously added to memcache
                 yield cls._memcacheOffset(cacheKey, -delta, deadline)
+                counter._postUpdateHook(delta, sliceId)
         
         # If memcache is not empty this means another update is in progress.
         # => Keep the value in memcache and wait for a task to process it.
@@ -333,13 +334,6 @@ class Counter(ndb.Model):
         Reads the current memcache count and write it to the datastore entity.
         This gets called from the Task Queue.
         
-        You can override this method in a subclass to implement a hook on updates.
-            @classmethod
-            def _updateFromMemcache(cls, cacheKey, opts):
-                counter = super(MyCounter, cls)._updateFromMemcache(cacheKey, opts)
-                if counter:
-                    logging.info("My current value is now %i!", counter.value)
-        
         @param opts: dict with keys "name", "slice". Can also have key "decr".
         
         @return: The updated Counter entity or None if we could not update it.
@@ -350,19 +344,34 @@ class Counter(ndb.Model):
         if delta:
             if cls._memcacheOffset(cacheKey, -delta).get_result() is not None:
                 try:
-                    return ndb.transaction(lambda: cls._updateEntity(opts['name'], delta, opts['slice'], deadline=6))
+                    counter = ndb.transaction(lambda: cls._updateEntity(opts['name'], delta, opts['slice'], deadline=6))
                 except:
                     logging.error("Exception, we will retry the task")
                     # Rollback
                     cls._memcacheOffset(cacheKey, delta).get_result()
                     # Re-raise so that the task is tried again
                     raise
+                
+                counter._postUpdateHook(delta, opts['slice'])
+                return counter
             else:
                 logging.warn("Could not decrement key %s", cacheKey)
         elif delta is None:
             logging.warn("Key not resolved in memcache: %s", cacheKey)
         return None
     
+    def _postUpdateHook(self, delta, sliceId):
+        """
+        Called after each update successfully written to the counter.
+        You can override this method in a subclass to implement a hook on updates.
+        
+        @param delta: The offset that has just been applied to the counter.
+        @param sliceId: The slice that has just been updated.
+        
+        @return: If you are making any RPC calls you should make it a tasklet (or return a Future)
+        @rtype: ndb.Future
+        """
+        
     @classmethod
     def _buildCounterCacheKey(cls, opts):
         """ Out of a dict describing the cached value, build the memcache key to use """
